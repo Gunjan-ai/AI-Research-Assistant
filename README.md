@@ -39,3 +39,9 @@ A Streamlit app that lets you upload a PDF, extract its content, and ask questio
    git remote add origin https://github.com/<your-username>/<your-repo>.git
    git push -u origin main
    ```
+# 📄 AI Research Assistant
+
+🚀 **Live Demo:** https://ai-research-assistant-cuwy3nvjw7oyx6qjmjmtcd.streamlit.app
+💻 **GitHub:** https://github.com/Gunjan-ai/AI-Research-Assistant/tree/main
+
+

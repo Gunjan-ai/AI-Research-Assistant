@@ -75,37 +75,45 @@ def render_app():
         elif question == "":
             st.warning("Please enter a question.")
         else:
-            reader = PdfReader(uploaded_file)
-            text = ""
+            with st.spinner("Processing PDF and generating embeddings..."):
+                reader = PdfReader(uploaded_file)
+                text = ""
 
-            for page in reader.pages:
-                page_text = page.extract_text()
-                if page_text:
-                    text += page_text
+                for page in reader.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text
 
-            st.success("PDF successfully loaded!")
-            st.subheader("Extracted Text")
+                st.success("PDF successfully loaded!")
+                st.subheader("Extracted Text")
 
-            chunks = chunk_text(text)
-            st.success(f"Successfully created {len(chunks)} chunks!")
+                chunks = chunk_text(text)
+                st.success(f"Successfully created {len(chunks)} chunks!")
 
-            embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-            embeddings = embedding_model.encode(chunks).tolist()
 
-            client = chromadb.Client()
-            try:
-                client.delete_collection("research_papers")
-            except Exception:
-                pass
+                @st.cache_resource
+                def load_embedding_model():
+                    return SentenceTransformer("all-MiniLM-L6-v2")
 
-            collection = client.create_collection(name="research_papers")
-            collection.upsert(
-                documents=chunks,
-                embeddings=embeddings,
-                ids=[str(i) for i in range(len(chunks))],
-            )
+                #embedding_model = load_embedding_model()
+                embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+                embeddings = embedding_model.encode(chunks).tolist()
+
+                client = chromadb.Client()
+                try:
+                    client.delete_collection("research_papers")
+                except Exception:
+                    pass
+
+                collection = client.create_collection(name="research_papers")
+                collection.upsert(
+                    documents=chunks,
+                    embeddings=embeddings,
+                    ids=[str(i) for i in range(len(chunks))],
+                )
 
             st.success(f"✅ Stored {len(chunks)} chunks in ChromaDB.")
+            st.success("✅ PDF processed successfully!")
 
             ranked_chunks = rank_chunks(question, chunks)
             context = "\n\n".join(ranked_chunks[:3])
@@ -136,9 +144,14 @@ def render_app():
                 return
 
             model = genai.GenerativeModel("gemini-2.5-flash")
-            response = model.generate_content(prompt)
+            with st.spinner("Searching the document..."):
+                response = model.generate_content(prompt)
+
             st.subheader("🤖 Answer")
             st.write(response.text)
+            #response = model.generate_content(prompt)
+           # st.subheader("🤖 Answer")
+            #st.write(response.text)
 
     st.markdown("---")
     st.caption("Built by Gunjan Gupta ❤️")
